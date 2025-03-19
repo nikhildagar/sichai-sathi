@@ -13,35 +13,47 @@ import { Twilio } from "twilio";
 import { ETChandler } from "./controllers/ETC.controller";
 
 dotenv.config();
-syncDb();
-const app = express();
 
-export const twilioClient = new Twilio(
-  process.env.TWILIO_SID as string,
-  process.env.TWILIO_AUTH_TOKEN as string
-);
+const startServer = async () => {
+  try {
+    await syncDb(); // sync DB only once
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.get("/", (_, res) => res.send("Welcome to Sichai Sathi APIv1 /api/v1"));
-app.use("/api/v1/farmer", FarmerRouter);
-app.use("/api/v1/irrigation/schedule", ScheduleRouter);
-app.use("/api/v1/irrigation", IrrigationRouter);
-app.use("/api/v1/alert", AlertRouter);
-app.use("/api/v1/weather", WeatherRouter);
-app.use("/api/v1/soil", SoilRouter);
-app.use("/api/v1/ivr", IVRRouter);
-app.use("/api/v1/etc", ETChandler);
-app.use("/api/v1/esp", ESPRouter);
+    const app = express();
 
-if (!process.env.PORT) console.log("PORT not defined");
+    export const twilioClient = new Twilio(
+      process.env.TWILIO_SID as string,
+      process.env.TWILIO_AUTH_TOKEN as string
+    );
 
-app.post("/moisture", (req, res) => {
-  console.log("Received Moisture Data", req.body.moisture);
-  res.send("Noted");
-});
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
 
-app.listen(process.env.PORT, () => {
-  syncDb();
-  console.log(`Server is running on http://localhost:${process.env.PORT}`);
-});
+    app.get("/", (_, res) => res.send("Welcome to Sichai Sathi API v1 /api/v1"));
+
+    app.use("/api/v1/farmer", FarmerRouter);
+    app.use("/api/v1/irrigation/schedule", ScheduleRouter);
+    app.use("/api/v1/irrigation", IrrigationRouter);
+    app.use("/api/v1/alert", AlertRouter);
+    app.use("/api/v1/weather", WeatherRouter);
+    app.use("/api/v1/soil", SoilRouter);
+    app.use("/api/v1/ivr", IVRRouter);
+    app.use("/api/v1/esp", ESPRouter);
+
+    // If ETChandler is a single route handler function (not a router), use .get() or .post()
+    app.get("/api/v1/etc", ETChandler);
+
+    app.post("/moisture", (req, res) => {
+      console.log("Received Moisture Data:", req.body.moisture);
+      res.send("Moisture data noted.");
+    });
+
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
+      console.log(`✅ Server is running on http://localhost:${port}`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+  }
+};
+
+startServer();
